@@ -50,9 +50,9 @@
 			char *state;
 			char *symbol;
 		} map[] = {
-			{ "Charging",    "+" },
-			{ "Discharging", "-" },
-			{ "Full",        "o" },
+			{ "Charging",    "C" },
+			{ "Discharging", "D" },
+			{ "Full",        "F" },
 		};
 		size_t i;
 		char path[PATH_MAX], state[12];
@@ -70,44 +70,47 @@
 				break;
 			}
 		}
-		return (i == LEN(map)) ? "?" : map[i].symbol;
+		return (i == LEN(map)) ? "U" : map[i].symbol;
 	}
 
 	const char *
-	battery_remaining(const char *bat)
+	battery_remaining(const char *bats)
 	{
 		uintmax_t charge_now, current_now, m, h;
-		double timeleft;
+		double timeleft = 0;
 		char path[PATH_MAX], state[12];
+		char const *bat;
 
-		if (esnprintf(path, sizeof(path),
-		              "/sys/class/power_supply/%s/status", bat) < 0) {
-			return NULL;
-		}
-		if (pscanf(path, "%12s", state) != 1) {
-			return NULL;
-		}
-
-		if (!pick(bat, "/sys/class/power_supply/%s/charge_now",
-		          "/sys/class/power_supply/%s/energy_now", path,
-		          sizeof(path)) ||
-		    pscanf(path, "%ju", &charge_now) < 0) {
-			return NULL;
-		}
-
-		if (!strcmp(state, "Discharging")) {
-			if (!pick(bat, "/sys/class/power_supply/%s/current_now",
-			          "/sys/class/power_supply/%s/power_now", path,
-			          sizeof(path)) ||
-			    pscanf(path, "%ju", &current_now) < 0) {
+		for (bat = bats; *bat != '\0'; bat += strlen(bats) + 1) {
+			if (esnprintf(path, sizeof(path),
+										"/sys/class/power_supply/%s/status", bat) < 0) {
+				return NULL;
+			}
+			if (pscanf(path, "%12s", state) != 1) {
 				return NULL;
 			}
 
-			if (current_now == 0) {
+			if (!pick(bat, "/sys/class/power_supply/%s/charge_now",
+								"/sys/class/power_supply/%s/energy_now", path,
+								sizeof(path)) ||
+					pscanf(path, "%ju", &charge_now) < 0) {
 				return NULL;
 			}
 
-			timeleft = (double)charge_now / (double)current_now;
+			if (!strcmp(state, "Discharging")) {
+				if (!pick(bat, "/sys/class/power_supply/%s/current_now",
+									"/sys/class/power_supply/%s/power_now", path,
+									sizeof(path)) ||
+						pscanf(path, "%ju", &current_now) < 0) {
+					return NULL;
+				}
+
+				if (current_now == 0) {
+					return NULL;
+				}
+
+				timeleft += (double)charge_now / (double)current_now;
+			}
 			h = timeleft;
 			m = (timeleft - (double)h) * 60;
 
@@ -161,8 +164,8 @@
 			unsigned int state;
 			char *symbol;
 		} map[] = {
-			{ APM_AC_ON,      "+" },
-			{ APM_AC_OFF,     "-" },
+			{ APM_AC_ON,      "C" },
+			{ APM_AC_OFF,     "D" },
 		};
 		struct apm_power_info apm_info;
 		size_t i;
@@ -173,7 +176,7 @@
 					break;
 				}
 			}
-			return (i == LEN(map)) ? "?" : map[i].symbol;
+			return (i == LEN(map)) ? "U" : map[i].symbol;
 		}
 
 		return NULL;

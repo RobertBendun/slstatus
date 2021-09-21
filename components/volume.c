@@ -7,6 +7,30 @@
 
 #include "../util.h"
 
+char result[10];
+char const* volume()
+{
+	unsigned volume;
+	FILE *p;
+
+	if ((p = popen("pamixer --get-volume-human", "r")) == NULL)
+		return NULL;
+
+	char buffer[sizeof("muted")];
+	fscanf(p, "%5s", buffer);
+
+	memset(result, 0, 10);
+
+	if (buffer[0] == 'm')
+		strcat(result, "M ");
+	else {
+		sscanf(buffer, "%u", &volume);
+	}
+
+	strcat(result, buffer);
+	return result;
+}
+
 #if defined(__OpenBSD__)
 	#include <sys/queue.h>
 	#include <poll.h>

@@ -18,6 +18,9 @@ const char *disk_perc(const char *path);
 const char *disk_total(const char *path);
 const char *disk_used(const char *path);
 
+/* disks */
+const char *disks();
+
 /* entropy */
 const char *entropy(void);
 
@@ -77,6 +80,7 @@ const char *username(void);
 const char *uid(void);
 
 /* volume */
+const char *volume();
 const char *vol_perc(const char *card);
 
 /* wifi */
